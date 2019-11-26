@@ -60,6 +60,8 @@ Deal_Board <- function(street){
   # assign("deck", setdiff(deck, Burn))
 
 
+  ##have to pick only 1 for now
+
    if (street == 1){
    assign("Flop", sample_n(deck, 3, replace = FALSE), envir = globalenv())
    }
@@ -76,7 +78,7 @@ Deal_Board <- function(street){
 }
 
 
-Deal_Board(street = 3)
+Deal_Board(street = 1)
 
 
 
@@ -112,10 +114,52 @@ Deal_Board(street = 3)
 # sf hmmmmm
 
 
+
+
+
 HandWin <- function(P1,...){
 
 HandRank <- c("HighHand","OnePair","TwoPair","Trips/Set","Straight","Flush","FullHouse","Quads","StraightFlush")
 RankVal <- 1:9
+
+
+player_hand <- rbind(Flop, Deals) %>% arrange(-value)
+
+
+
+
+player_hand_reduce_card <- as.data.frame(player_hand) %>%
+  group_by(card) %>%
+  summarise(n = n()) %>% arrange(-n)
+
+player_hand_reduce_suit <- player_hand %>%
+  group_by(suit) %>%
+  summarise(n = n()) %>% arrange(-n)
+
+
+player_hand_rank <- case_when(max(player_hand_reduce_card$n) == 1 ~ "High Hand",
+                              max(player_hand_reduce_card$n) == 2 ~ "One Pair",
+                              player_hand_reduce_card[1:2] == 2 ~ "Two Pair", ## Does this work
+                              max(player_hand_reduce_card$n) == 3 ~ "Trips/Set",
+
+                              #bad straight logic surely can be improved ALSO no wheel logic yet
+                                player_hand$value[1] - player_hand$value[2] == 1 &
+                                player_hand$value[2] - player_hand$value[3] == 1 &
+                                player_hand$value[3] - player_hand$value[4] == 1 &
+                                player_hand$value[4] - player_hand$value[5] == 1 ~ "Straight",
+
+
+                              player_hand_reduce_suit$n >= 5 ~ "Flush",
+                              max(player_hand_reduce_card$n) == 3 & player_hand_reduce_card$n[2] == 2 ~ "Full House",
+                              max(player_hand_reduce_card$n) == 4 ~ "Quads",
+
+                                player_hand$value[1] - player_hand$value[2] == 1 &
+                                player_hand$value[2] - player_hand$value[3] == 1 &
+                                player_hand$value[3] - player_hand$value[4] == 1 &
+                                player_hand$value[4] - player_hand$value[5] == 1 &
+                                player_hand_reduce_suit$n >= 5 ~ "Straight Flush")
+
+
 
 Win_df <- as_tibble(cbind(RankVal,HandRank))
 
